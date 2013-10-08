@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.matlib 
-#from numba import autojit
+from numba import autojit
 import random
 import heapq
 
@@ -13,7 +13,6 @@ def random_vector(min_max_pairs):
 
 # Returns [w, C, tc]
 #def trn(X, t_max, N, epsilon_i, epsilon_f, Ti, Tf, lambda_i, lambda_f):
-#@autojit
 def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
     connections = np.empty((codebook_size, codebook_size), dtype=object)
     # generate codebook vectors
@@ -23,9 +22,11 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
             random_vector([
                 (0, 10),
                 (0, 10),
+                (0, 10),
+                (0, 10),
                 (0, 10)]))
 
-    for __data_point__ in data_set:
+    for __data_point__ in range(0, len(data_set)):
         random_data_point = data_set[random.randint(0, len(data_set) - 1)] # choose a random data point
 
         for t in range(0, max_iterations):
@@ -62,7 +63,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
             connections[index_smallest2, index_smallest1] = [1, 0]
             
             
-            # age all connections
+            # age all connections <- THIS IS TERRIBLE
             for row in range(0, len(connections)):
                 for col in range(0, len(connections[row])):
                     if connections[row][col] != None:
@@ -71,6 +72,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
                             connections[row][col] = None
 
     return codebook, connections
+
 
 def output_json(codebook, connections):
     f = open("graph.json", "w")
@@ -88,6 +90,8 @@ def main():
         dataset.append(random_vector([
             (1,10),
             (1,10),
+            (1,10),
+            (1,10),
             (1,10)]))
 
     import time
@@ -97,9 +101,10 @@ def main():
     lambda_i = 0.5
     max_age = int(0.9 * num_points)
     codebook_size = 20
+    print "Constructing network on", len(dataset), "data points..."
     codebook, connections = trn(dataset, max_iter, codebook_size, epsilon, lambda_i, max_age)
-    print time.time() - t0
-    output_json(codebook, connections)
+    print "TRN Runtime:", time.time() - t0
+    #output_json(codebook, connections)
 
 if __name__ == "__main__":
     main()
