@@ -57,8 +57,10 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
             # find closest two codebook indices <- SOMETHING WRONG HERE
             smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
             index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
+            # create connection and refresh existing connection
             connections[index_smallest1, index_smallest2] = [1, 0]
             connections[index_smallest2, index_smallest1] = [1, 0]
+            
             
             # age all connections
             for row in range(0, len(connections)):
@@ -67,6 +69,16 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
                         connections[row][col][1] += 1
                         if connections[row][col][1] > max_age:
                             connections[row][col] = None
+
+    return codebook, connections
+
+def output_json(codebook, connections):
+    f = open("graph.json", "w")
+    for i in range(0, len(connections)):
+        for j in range(0, len(connections[i])):
+            if connections[i][j] != None:
+                f.write("{'source':"+str(i)+", 'target':"+str(j)+", 'value':1},\n") 
+    f.close()
 
 
 def main():
@@ -80,60 +92,15 @@ def main():
 
     import time
     t0 = time.time()
-    trn(dataset, int(0.2*num_points), 20, 0.2, 0.2, 10)
+    max_iter = int(0.2 * num_points)
+    epsilon = 0.2
+    lambda_i = 0.5
+    max_age = int(0.9 * num_points)
+    codebook_size = 20
+    codebook, connections = trn(dataset, max_iter, codebook_size, epsilon, lambda_i, max_age)
     print time.time() - t0
+    output_json(codebook, connections)
 
 if __name__ == "__main__":
     main()
 
-
-"""
-    for i=1:tmax:
-        
-        %step2
-        v=X(:,floor(N*rand)+1);
-        
-        %step3
-        dist=[];
-        dist=sum((w-repmat(v,1,size(w,2))).^2,1)';
-        [dist2,index]=sort(dist);
-        [index2,kindex]=sort(index);
-        
-        %step4
-        lambda=lambdai*((lambdaf/lambdai)^(i/tmax));
-        epsz=epszi*((epszf/epszi)^(i/tmax));
-        for k=1:n:
-            w(:,k)=w(:,k)+epsz.*exp(-(kindex(k)-1)/lambda)*(v-w(:,k));
-
-    
-    %step5
-    C(index(1),index(2))=1;
-    C(index(2),index(1))=1;
-    t(index(1),index(2))=0;
-    t(index(2),index(1))=0;
-    tc(index(1),index(2))=tc(index(1),index(2))+(i/tmax);%%%%%%%%%%%%%%%%%%
-    tc(index(2),index(1))=tc(index(2),index(1))+(i/tmax);%%%%%%%%%%%%%%%%%%
-    
-    
-    %step6
-    connectsh=find(C(index(1),:));
-    t(index(1),connectsh)=t(index(1),connectsh)+1;
-    connectsv=find(C(:,index(1)));
-    t(connectsv,index(1))=t(connectsv,index(1))+1;
-    
-    
-   %step7
-   T=Ti*(Tf/Ti)^(i/tmax);
-   deleteh=find(t(index(1),:)>T);
-   C(index(1),deleteh)=0;
-   t(index(1),deleteh)=0;
-   deletev=find(t(:,index(1))>T);
-   C(deletev,index(1))=0;
-   t(deletev,index(1))=0;
-  
-   
-end
-
-figdrawn(X,w,C,'TRN')
-
-"""
