@@ -2,6 +2,7 @@ import numpy as np
 import numpy.matlib 
 import matplotlib.pyplot as plt
 import networkx as nx
+from networkx.readwrite import json_graph
 from numba import autojit
 import random
 import heapq
@@ -16,7 +17,7 @@ def random_vector(min_max_pairs):
 
 # Returns [w, C, tc]
 #def trn(X, t_max, N, epsilon_i, epsilon_f, Ti, Tf, lambda_i, lambda_f):
-def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
+def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
     connections = np.empty((codebook_size, codebook_size), dtype=object)
     # generate codebook vectors
     codebook = []
@@ -46,6 +47,8 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
             for i in range(codebook_size):
                 distances.append(np.linalg.norm(random_data_point - codebook[i]))
         
+            lambda_val = lambda_i * ((lambda_f / lambda_i) ** (float(t) / max_iterations));
+            epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** (float(t) / max_iterations));
             for i in range(codebook_size):
                 codebooks_near_point[i] = np.sum(distances < distances[i])
                 # update the codebook vectors according to the neural gas algorithm
@@ -61,6 +64,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon, lambda_val, max_age):
             
             
             # age all connections <- THIS IS TERRIBLE
+            max_age = T_i * ((T_f / T_i) ** (float(t) / max_iterations));
             for row in range(len(connections)):
                 for col in range(len(connections[row])):
                     if connections[row][col] != None:
@@ -87,12 +91,12 @@ def draw_graph(G, file_name):
     nx.draw(G)
     plt.savefig(file_name)
             
-def output_json(codebook, connections):
+def output_json(G):
+    import json
     f = open("graph.json", "w")
-    for i in range(len(connections)):
-        for j in range(len(connections[i])):
-            if connections[i][j] != None:
-                f.write("{'source':"+str(i)+", 'target':"+str(j)+", 'value':1},\n") 
+    data = json_graph.node_link_data(G)
+    serialized_data = json.dumps(data)
+    f.write(serialized_data)
     f.close()
 
 
@@ -102,18 +106,17 @@ def main():
     num_points = len(dataset)
     import time
     t0 = time.time()
-    max_iter = 50
-    epsilon = 0.2
-    lambda_i = 0.5
-    max_age = 1000
-    codebook_size = 50
+    max_iter = 100
+    epsilon_i = 0.3
+    epsilon_f = 0.05
+    lambda_i = 0.2 * num_points
+    lambda_f = 0.01
+    T_i = 0.1 * num_points
+    T_f = 0.5 * num_points
+    codebook_size = 20
     print "Constructing network on", len(dataset), "data points..."
-    codebook, connections = trn(dataset, max_iter, codebook_size, epsilon, lambda_i, max_age)
+    codebook, connections = trn(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
     print "TRN Runtime:", time.time() - t0
-
-    print "\nDataset:"
-    for line in dataset:
-        print line[0],",", line[1]
 
     print "\nCodebook:"
     for item in codebook:
@@ -126,6 +129,7 @@ def main():
     print "Drawing graph..."
     print G.edges()
     draw_graph(G, "graph.png")
+    output_json(G)
     print "Done!"
     #output_json(codebook, connections)
 
