@@ -112,9 +112,10 @@ def main():
     lambda_f = 0.01
     T_i = 0.1 * num_points
     T_f = 0.5 * num_points
-    codebook_size = 200
+    codebook_size = int(sys.argv[1])
     max_iter = 200 * codebook_size
-    print "Constructing network on", len(dataset), "data points..."
+    print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
+
     codebook, connections = trn(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
     print "TRN Runtime:", time.time() - t0
 
