@@ -24,9 +24,9 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
     for i in range(codebook_size):
         codebook.append(
             random_vector([
-                (0, 30),
-                (0, 30),
-                (0, 30)]))
+                (-100, 100),
+                (-100, 100),
+                (-100, 100)]))
 
     for t in range(max_iterations):
         # Progress bar
