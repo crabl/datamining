@@ -3,7 +3,6 @@ import numpy.matlib
 import matplotlib.pyplot as plt
 import networkx as nx
 from networkx.readwrite import json_graph
-from numba import autojit
 import random
 import heapq
 import sys
@@ -117,11 +116,12 @@ def main():
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
 
     codebook, connections = trn(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
-    print "TRN Runtime:", time.time() - t0
+    print ""
+    print "TRN Runtime:", time.time() - t0, "seconds"
 
-    print "\nCodebook:"
-    for item in codebook:
-        print item[0],",", item[1],",",item[2]
+    #print "\nCodebook:"
+    #for item in codebook:
+    #    print item[0],",", item[1],",",item[2]
 
     print "\nConnections:"
 
