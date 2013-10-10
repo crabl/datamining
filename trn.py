@@ -52,15 +52,15 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
             codebooks_near_point[i] = np.sum(distances < distances[i])
             # update the codebook vectors according to the neural gas algorithm
             #for i in range(0, codebook_size):
-            codebook[i] = codebook[i] + epsilon * np.exp(-1 * codebooks_near_point[i] / lambda_val) * (random_data_point - codebook[i])
+            codebook[i] += epsilon * np.exp(-1 * codebooks_near_point[i] / lambda_val) * (random_data_point - codebook[i])
 
-        # find closest two codebook indices <- SOMETHING WRONG HERE
+        # find closest two codebook indices
         smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
         index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
+        
         # create connection and refresh existing connection
         connections[index_smallest1, index_smallest2] = [1, 0]
         connections[index_smallest2, index_smallest1] = [1, 0]
-            
             
         # age all connections <- THIS IS TERRIBLE
         max_age = T_i * ((T_f / T_i) ** (float(t) / max_iterations));
