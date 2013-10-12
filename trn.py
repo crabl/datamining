@@ -16,7 +16,7 @@ def random_vector(min_max_pairs):
 
 def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
     #connections = np.empty((codebook_size, codebook_size), dtype=object)
-    connections = np.zeros((codebook_size, codebook_size), dtype=np.uint32)
+    connections = np.zeros((codebook_size, codebook_size), dtype=np.float16)
 
     dimensions = len(data_set[0])
 
@@ -38,7 +38,8 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         # for each w[i] find the number of w[j] such that || x-w[j] || < || x - w[i] ||
         # array of all x - w[i]
         # array of all || x - w[i] ||
-        distances = map(lambda i: np.linalg.norm(random_data_point - codebook[i]), xrange(codebook_size))
+        #distances = map(lambda i: np.linalg.norm(random_data_point - codebook[i]), xrange(codebook_size))
+        distances = [np.linalg.norm(random_data_point - codebook[i]) for i in xrange(codebook_size)]
 
         # update the codebook vectors according to the neural gas algorithm        
         lambda_val = lambda_i * ((lambda_f / lambda_i) ** iter_fraction);
@@ -52,24 +53,15 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
         
         # create connection and refresh existing connection
-        #connections[index_smallest1, index_smallest2] = [1, 0]
-        #connections[index_smallest2, index_smallest1] = [1, 0]
         connections[index_smallest1, index_smallest2] = 1
-        connections[index_smallest2, index_smallest1] = 1
+        #connections[index_smallest2, index_smallest1] = 1
 
         # age all connections
         max_age = T_i * ((T_f / T_i) ** iter_fraction)
 
         np.putmask(connections, connections != 0, connections + 1) # Age all non-zero entries (zero => no connection)
         np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
-        """
-        for row in xrange(len(connections)):
-            for col in xrange(len(connections[row])):
-                if connections[row][col]:
-                    connections[row][col][1] += 1
-                    if connections[row][col][1] > max_age:
-                        connections[row][col] = None
-        """
+
     return codebook, connections
 
 def connections_to_graph(connections):
