@@ -14,71 +14,70 @@ def random_vector(min_max_pairs):
     
     return np.array(v)
 
-# Returns [w, C, tc]
-#def trn(X, t_max, N, epsilon_i, epsilon_f, Ti, Tf, lambda_i, lambda_f):
 def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
-    connections = np.empty((codebook_size, codebook_size), dtype=object)
-    # generate codebook vectors
-    codebook = []
-    for i in range(codebook_size):
-        codebook.append(
-            random_vector([
-                (-100, 100),
-                (-100, 100),
-                (-100, 100)]))
+    #connections = np.empty((codebook_size, codebook_size), dtype=object)
+    connections = np.zeros((codebook_size, codebook_size), dtype=np.uint32)
 
-    for t in range(max_iterations):
+    dimensions = len(data_set[0])
+
+    # generate codebook vectors
+    codebook = [random_vector([(-100, 100) for k in xrange(dimensions)]) for i in xrange(codebook_size)]
+
+    #mp_pool = Pool(processes=4)
+    for t in xrange(max_iterations):
+        iter_fraction = float(t) / max_iterations
+
         # Progress bar
-        amtDone = float(t) / max_iterations * 100
+        amtDone = iter_fraction * 100
         sys.stdout.write("\r%.2f%%" %amtDone)
         sys.stdout.flush()
 
         # Select random data point
         random_data_point = data_set[random.randint(0, len(data_set)-1)]
         
-        codebooks_near_point = np.zeros(codebook_size)
-            
         # for each w[i] find the number of w[j] such that || x-w[j] || < || x - w[i] ||
         # array of all x - w[i]
         # array of all || x - w[i] ||
-        distances = []
+        distances = map(lambda i: np.linalg.norm(random_data_point - codebook[i]), xrange(codebook_size))
 
-        for i in range(codebook_size):
-            distances.append(np.linalg.norm(random_data_point - codebook[i]))
-        
-        lambda_val = lambda_i * ((lambda_f / lambda_i) ** (float(t) / max_iterations));
-        epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** (float(t) / max_iterations));
-        for i in range(codebook_size):
-            codebooks_near_point[i] = np.sum(distances < distances[i])
-            # update the codebook vectors according to the neural gas algorithm
-            #for i in range(0, codebook_size):
-            codebook[i] += epsilon * np.exp(-1 * codebooks_near_point[i] / lambda_val) * (random_data_point - codebook[i])
+        # update the codebook vectors according to the neural gas algorithm        
+        lambda_val = lambda_i * ((lambda_f / lambda_i) ** iter_fraction);
+        epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** iter_fraction);
+        for i in xrange(codebook_size):
+            codebooks_near_point_i = np.sum(distances < distances[i])
+            codebook[i] += epsilon * np.exp(-1 * codebooks_near_point_i / lambda_val) * (random_data_point - codebook[i])
 
         # find closest two codebook indices
         smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
         index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
         
         # create connection and refresh existing connection
-        connections[index_smallest1, index_smallest2] = [1, 0]
-        connections[index_smallest2, index_smallest1] = [1, 0]
-            
-        # age all connections <- THIS IS TERRIBLE
-        max_age = T_i * ((T_f / T_i) ** (float(t) / max_iterations));
-        for row in range(len(connections)):
-            for col in range(len(connections[row])):
-                if connections[row][col] != None:
+        #connections[index_smallest1, index_smallest2] = [1, 0]
+        #connections[index_smallest2, index_smallest1] = [1, 0]
+        connections[index_smallest1, index_smallest2] = 1
+        connections[index_smallest2, index_smallest1] = 1
+
+        # age all connections
+        max_age = T_i * ((T_f / T_i) ** iter_fraction)
+
+        np.putmask(connections, connections != 0, connections + 1) # Age all non-zero entries (zero => no connection)
+        np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
+        """
+        for row in xrange(len(connections)):
+            for col in xrange(len(connections[row])):
+                if connections[row][col]:
                     connections[row][col][1] += 1
                     if connections[row][col][1] > max_age:
                         connections[row][col] = None
-
+        """
     return codebook, connections
 
 def connections_to_graph(connections):
     adjacency_matrix = np.zeros((len(connections), len(connections)))
 
-    for i in range(len(connections)):
-        for j in range(len(connections[i])):
-            if connections[i,j]:
+    for i in xrange(len(connections)):
+        for j in xrange(len(connections[i])):
+            if connections[i,j] >= 1:
                 adjacency_matrix[i,j] = 1
             else:
                 adjacency_matrix[i,j] = 0
@@ -98,9 +97,8 @@ def output_json(G):
     f.write(serialized_data)
     f.close()
 
-
 def main():
-    dataset = np.genfromtxt("swissroll.csv", delimiter="\t")
+    dataset = np.genfromtxt(str(sys.argv[1]), delimiter="\t")
 
     num_points = len(dataset)
     import time
@@ -111,7 +109,7 @@ def main():
     lambda_f = 0.01
     T_i = 0.1 * num_points
     T_f = 0.5 * num_points
-    codebook_size = int(sys.argv[1])
+    codebook_size = int(sys.argv[2])
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
 
