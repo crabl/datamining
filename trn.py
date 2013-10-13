@@ -16,7 +16,7 @@ def random_vector(min_max_pairs):
 
 def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
     #connections = np.empty((codebook_size, codebook_size), dtype=object)
-    connections = np.zeros((codebook_size, codebook_size), dtype=np.float16)
+    connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
 
     dimensions = len(data_set[0])
 
@@ -38,8 +38,10 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         # for each w[i] find the number of w[j] such that || x-w[j] || < || x - w[i] ||
         # array of all x - w[i]
         # array of all || x - w[i] ||
-        #distances = map(lambda i: np.linalg.norm(random_data_point - codebook[i]), xrange(codebook_size))
-        distances = [np.linalg.norm(random_data_point - codebook[i]) for i in xrange(codebook_size)]
+        # using numpy vectorization
+        V = random_data_point - codebook
+        distances = np.sqrt(np.multiply(V,V)).sum(axis=1)
+        #distances = [np.linalg.norm(random_data_point - codebook[i]) for i in xrange(codebook_size)]
 
         # update the codebook vectors according to the neural gas algorithm        
         lambda_val = lambda_i * ((lambda_f / lambda_i) ** iter_fraction);
