@@ -32,17 +32,29 @@ svg {
 section {
     padding: 15px 30px 15px 15px;
     border-bottom: 1px solid #3f3f3f;
+}
 
+section:last-child { border: none; }
+
+#analysis {
+  position:relative;
+  top: 0; left: 100px;
+  z-index: 0;
+  width: auto;
+  height: 100%;
+  background: #000  ;
 }
 
 #controls {
+    z-index: 100;
     position: absolute;
     top: 0;
     left: 0;
-    //width: 260px;
-    height: 100%;
+    overflow: hidden;
+    min-height: 100%;
     padding: 5px;
     background: #302f2f;
+    border-right: 1px solid #000;
 }
 
 .sidebar-hidden {
@@ -61,6 +73,7 @@ section {
 	background: #302f2f;
 	color: #fff;
 	font-family: 'Lato', Calibri, Arial, sans-serif;
+  font-weight: 700;
 	font-size: 1em;
 	letter-spacing: 1px;
 	text-transform: uppercase;
