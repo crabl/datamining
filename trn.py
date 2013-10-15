@@ -1,11 +1,12 @@
 import numpy as np
-import numpy.matlib 
 import matplotlib.pyplot as plt
+#import matplotlib.mlab as mlb
 import networkx as nx
 from networkx.readwrite import json_graph
 import random
 import heapq
 import sys
+import sklearn.preprocessing as skp
 
 def random_vector(min_max_pairs):
     v = []
@@ -15,21 +16,18 @@ def random_vector(min_max_pairs):
     return np.array(v)
 
 def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
-    #connections = np.empty((codebook_size, codebook_size), dtype=object)
     connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
-
     dimensions = len(data_set[0])
 
     # generate codebook vectors
-    codebook = [random_vector([(-100, 100) for k in xrange(dimensions)]) for i in xrange(codebook_size)]
+    codebook = np.array([random_vector([(-100, 100) for k in xrange(dimensions)]) for i in xrange(codebook_size)])
 
-    #mp_pool = Pool(processes=4)
     for t in xrange(max_iterations):
         iter_fraction = float(t) / max_iterations
 
         # Progress bar
         amtDone = iter_fraction * 100
-        sys.stdout.write("\r%.2f%%" %amtDone)
+        sys.stdout.write("\r%.1f%%" %amtDone)
         sys.stdout.flush()
 
         # Select random data point
@@ -40,43 +38,38 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         # array of all || x - w[i] ||
         # using numpy vectorization
         V = random_data_point - codebook
-        distances = np.sqrt(np.multiply(V,V)).sum(axis=1)
-        #distances = [np.linalg.norm(random_data_point - codebook[i]) for i in xrange(codebook_size)]
+        distances = np.sqrt(np.multiply(V, V)).sum(axis=1)
 
         # update the codebook vectors according to the neural gas algorithm        
         lambda_val = lambda_i * ((lambda_f / lambda_i) ** iter_fraction);
         epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** iter_fraction);
+
+        # This is a huge bottleneck... make it faster
         for i in xrange(codebook_size):
-            codebooks_near_point_i = np.sum(distances < distances[i])
+            codebooks_near_point_i = (distances < distances[i]).sum()
             codebook[i] += epsilon * np.exp(-1 * codebooks_near_point_i / lambda_val) * (random_data_point - codebook[i])
 
         # find closest two codebook indices
         smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
         index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
-        
+
         # create connection and refresh existing connection
         connections[index_smallest1, index_smallest2] = 1
-        #connections[index_smallest2, index_smallest1] = 1
 
         # age all connections
         max_age = T_i * ((T_f / T_i) ** iter_fraction)
-
         np.putmask(connections, connections != 0, connections + 1) # Age all non-zero entries (zero => no connection)
         np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
 
     return codebook, connections
 
-def connections_to_graph(connections):
-    adjacency_matrix = np.zeros((len(connections), len(connections)))
-
-    for i in xrange(len(connections)):
-        for j in xrange(len(connections[i])):
-            if connections[i,j] >= 1:
-                adjacency_matrix[i,j] = 1
-            else:
-                adjacency_matrix[i,j] = 0
-
-    G = nx.Graph(adjacency_matrix)
+def connections_to_graph(connections, codebook):
+    np.putmask(connections, connections > 1, 1)
+    G = nx.Graph(connections)
+    x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
+    y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
+    nx.set_node_attributes(G, 'x', x_dict)
+    nx.set_node_attributes(G, 'y', y_dict)
     return G
 
 def draw_graph(G, file_name):
@@ -92,8 +85,9 @@ def output_json(G):
     f.close()
 
 def main():
-    dataset = np.genfromtxt(str(sys.argv[1]), delimiter="\t")
-
+    raw_dataset = np.genfromtxt(str(sys.argv[1]), delimiter="\t")
+    #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
+    dataset = raw_dataset
     num_points = len(dataset)
     import time
     t0 = time.time()
@@ -111,20 +105,13 @@ def main():
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
-    #print "\nCodebook:"
-    #for item in codebook:
-    #    print item[0],",", item[1],",",item[2]
-
-    print "\nConnections:"
-
-    G = connections_to_graph(connections)
-    
     print "Drawing graph..."
+    G = connections_to_graph(connections, codebook)
     print G.edges()
     draw_graph(G, "graph.png")
     output_json(G)
+    
     print "Done!"
-    #output_json(codebook, connections)
 
 if __name__ == "__main__":
     main()
