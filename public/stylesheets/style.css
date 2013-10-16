@@ -37,11 +37,9 @@ section {
 section:last-child { border: none; }
 
 #analysis {
-  position:relative;
-  top: 0; left: 100px;
+  position: absolute;
+  top: 0; left: 311px; right: 0; bottom: 0;
   z-index: 0;
-  width: auto;
-  height: 1000px;
   background: #fefefe;
 }
 
@@ -50,8 +48,9 @@ section:last-child { border: none; }
     position: absolute;
     top: 0;
     left: 0;
-    overflow: hidden;
-    min-height: 100%;
+    bottom: 0;
+    overflow: scroll;
+    width: 310px;
     padding: 5px;
     background: #302f2f;
     border-right: 1px solid #000;

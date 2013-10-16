@@ -4,8 +4,11 @@ function draw_graph(fileName) {
     defaultLabelColor: '#fff',
     defaultEdgeColor: '#70BCD6'
   }).graphProperties({
-      minNodeSize: 0.5,
-      maxNodeSize: 5
+    minNodeSize: 2,
+    maxNodeSize: 4
+  }).mouseProperties({
+    minRatio: 1,
+    maxRatio: 3
   });
 
   sigInst.parseGexf(fileName);
