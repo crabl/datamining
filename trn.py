@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import matplotlib.mlab as mlb
 import networkx as nx
-from networkx.readwrite import json_graph
+from networkx.readwrite import json_graph, write_gexf
 import random
 import heapq
 import sys
@@ -66,10 +66,10 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 def connections_to_graph(connections, codebook):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
-    x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
-    y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
-    nx.set_node_attributes(G, 'x', x_dict)
-    nx.set_node_attributes(G, 'y', y_dict)
+    #x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
+    #y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
+    #nx.set_node_attributes(G, 'x', x_dict)
+    #nx.set_node_attributes(G, 'y', y_dict)
     return G
 
 def draw_graph(G, file_name):
@@ -83,6 +83,9 @@ def output_json(G):
     serialized_data = json.dumps(data)
     f.write(serialized_data)
     f.close()
+
+def output_gexf(G):
+    write_gexf(G, "graph.gexf")
 
 def main():
     raw_dataset = np.genfromtxt(str(sys.argv[1]), delimiter="\t")
@@ -108,9 +111,9 @@ def main():
     print "Drawing graph..."
     G = connections_to_graph(connections, codebook)
     print G.edges()
-    draw_graph(G, "graph.png")
-    output_json(G)
-    
+    #draw_graph(G, "graph.png")
+    #output_json(G)
+    output_gexf(G)
     print "Done!"
 
 if __name__ == "__main__":

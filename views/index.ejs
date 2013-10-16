@@ -86,8 +86,9 @@
 <script src="/ModalWindowEffects/js/css-filters-polyfill.js"></script>
 
 <script src="/javascripts/medium.js"></script>
-<script src="/javascripts/sigma.min.js"></script>
 <script src="/javascripts/jquery-2.0.3.min.js"></script>
+<script src="/javascripts/sigma.min.js"></script>
+<script src="/javascripts/sigma.parseGexf.js"></script>
 <script src="/javascripts/graphPlugin.js"></script>
 <script>
 new Medium({
@@ -98,8 +99,12 @@ new Medium({
 });
 
 function load_csv_data() {
-
+  draw_graph('/results/graph.gexf');
 }
+
+$("document").ready(function() {
+  load_csv_data();
+});
 </script>
 
 </body>

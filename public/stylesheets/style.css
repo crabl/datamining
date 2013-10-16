@@ -41,8 +41,8 @@ section:last-child { border: none; }
   top: 0; left: 100px;
   z-index: 0;
   width: auto;
-  height: 100%;
-  background: #000  ;
+  height: 1000px;
+  background: #fefefe;
 }
 
 #controls {
