@@ -6,7 +6,7 @@ from networkx.readwrite import json_graph, write_gexf
 import random
 import heapq
 import sys
-import sklearn.preprocessing as skp
+//import sklearn.preprocessing as skp
 
 def random_vector(min_max_pairs):
     v = []
