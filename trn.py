@@ -6,13 +6,13 @@ from networkx.readwrite import json_graph, write_gexf
 import random
 import heapq
 import sys
-//import sklearn.preprocessing as skp
+#import sklearn.preprocessing as skp
 
 def random_vector(min_max_pairs):
     v = []
     for (min_val, max_val) in min_max_pairs:
         v.append(random.uniform(min_val, max_val))
-    
+
     return np.array(v)
 
 def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
@@ -32,7 +32,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 
         # Select random data point
         random_data_point = data_set[random.randint(0, len(data_set)-1)]
-        
+
         # for each w[i] find the number of w[j] such that || x-w[j] || < || x - w[i] ||
         # array of all x - w[i]
         # array of all || x - w[i] ||
@@ -40,7 +40,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         V = random_data_point - codebook
         distances = np.sqrt(np.multiply(V, V)).sum(axis=1)
 
-        # update the codebook vectors according to the neural gas algorithm        
+        # update the codebook vectors according to the neural gas algorithm
         lambda_val = lambda_i * ((lambda_f / lambda_i) ** iter_fraction);
         epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** iter_fraction);
 
@@ -75,7 +75,7 @@ def connections_to_graph(connections, codebook):
 def draw_graph(G, file_name):
     nx.draw(G)
     plt.savefig(file_name)
-            
+
 def output_json(G):
     import json
     f = open("graph.json", "w")
@@ -112,10 +112,11 @@ def main():
     G = connections_to_graph(connections, codebook)
     print G.edges()
     #draw_graph(G, "graph.png")
-    #output_json(G)
+    output_json(G)
     output_gexf(G)
     print "Done!"
 
 if __name__ == "__main__":
     main()
 
+

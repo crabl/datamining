@@ -2,6 +2,8 @@ from flask import Flask, request, redirect, render_template, url_for
 from flask_sockets import Sockets
 from werkzeug import secure_filename
 
+import trn
+
 app = Flask(__name__)
 sockets = Sockets(app)
 
@@ -12,11 +14,13 @@ ALLOWED_EXTENSIONS = set(["txt", "csv", "dat"])
 def echo_socket(ws):
     while True:
         message = ws.receive()
-        ws.send("From the server, " + message)
+        ws.send("ECHO! " + message)
+        ws.send("ANOTHER ECHO!" + message)
+
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    
+
     return "OK"
 
 @app.route("/")
