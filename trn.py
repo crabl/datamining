@@ -87,8 +87,8 @@ def output_json(G):
 def output_gexf(G):
     write_gexf(G, "graph.gexf")
 
-def main():
-    raw_dataset = np.genfromtxt(str(sys.argv[1]), delimiter="\t")
+def main(fileName, codebookSize):
+    raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
     #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
     dataset = raw_dataset
     num_points = len(dataset)
@@ -100,7 +100,7 @@ def main():
     lambda_f = 0.01
     T_i = 0.1 * num_points
     T_f = 0.5 * num_points
-    codebook_size = int(sys.argv[2])
+    codebook_size = int(codebookSize)
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
 
@@ -118,5 +118,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 

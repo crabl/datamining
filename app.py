@@ -7,14 +7,16 @@ import trn
 app = Flask(__name__)
 sockets = Sockets(app)
 
-UPLOAD_FOLDER = "/tmp/"
+UPLOAD_FOLDER = "data/"
 ALLOWED_EXTENSIONS = set(["txt", "csv", "dat"])
 
-@sockets.route("/echo")
-def echo_socket(ws):
+@sockets.route("/trn")
+def trn_socket(ws):
     while True:
         message = ws.receive()
-        ws.send("ECHO! " + message)
+        trnInstance = trn.main(UPLOAD_FOLDER + "/wine_noannotation.csv", "35")
+        jsonFile = open("graph.json")
+        ws.send(jsonFile.read())
         ws.send("ANOTHER ECHO!" + message)
 
 
