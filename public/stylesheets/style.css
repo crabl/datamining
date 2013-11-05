@@ -1,8 +1,94 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    font-family: "Lato", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.5pt;
+    font-size: 8pt;
+    color: #fafafa;
 }
+
+h1 {
+    text-transform: uppercase;
+    font-size: 12pt
+}
+
+h2 {
+    color: #cacaca;
+    font-size: 10pt;
+}
+
+i { margin-right: 7px; }
 
 a {
   color: #00B7FF;
 }
+
+svg {
+    margin: 0;
+    padding: 0;
+}
+
+section {
+    padding: 15px 30px 15px 15px;
+    border-bottom: 1px solid #3f3f3f;
+}
+
+section:last-child { border: none; }
+
+#analysis {
+  position: absolute;
+  top: 0; left: 311px; right: 0; bottom: 0;
+  z-index: 0;
+  background: #fefefe;
+}
+
+#controls {
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow: scroll;
+    width: 310px;
+    padding: 5px;
+    background: #302f2f;
+    border-right: 1px solid #000;
+}
+
+.sidebar-hidden {
+
+}
+
+.sidebar-hidden * {
+    display: none;
+}
+
+.container { background: #fff; }
+
+#controls button, .md-content button {
+	border: 2px solid #fff;
+	padding: 0.6em 1.2em;
+	background: #302f2f;
+	color: #fff;
+	font-family: 'Lato', Calibri, Arial, sans-serif;
+  font-weight: 700;
+	font-size: 1em;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	cursor: pointer;
+	display: inline-block;
+	margin: 3px 2px;
+	border-radius: 2px;
+}
+
+.md-content button {
+  border: none;
+  background: #E04B34;
+}
+
+.md-content p {
+  font-size: 11pt;
+}
+
+.centered { text-align: center; }
