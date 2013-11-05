@@ -1,8 +1,12 @@
-from flask import Flask
+from flask import Flask, request, redirect, render_template, url_for
 from flask_sockets import Sockets
+from werkzeug import secure_filename
 
 app = Flask(__name__)
 sockets = Sockets(app)
+
+UPLOAD_FOLDER = "/tmp/"
+ALLOWED_EXTENSIONS = set(["txt", "csv", "dat"])
 
 @sockets.route("/echo")
 def echo_socket(ws):
@@ -10,9 +14,14 @@ def echo_socket(ws):
         message = ws.receive()
         ws.send("From the server, " + message)
 
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    
+    return "OK"
+
 @app.route("/")
 def hello():
-    return "Hello, world!"
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run()
