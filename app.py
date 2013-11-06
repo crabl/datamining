@@ -3,7 +3,7 @@ from flask_sockets import Sockets
 from werkzeug import secure_filename
 
 import trn
-app = Flask(__name__, static_url_path="")
+app = Flask(__name__, static_url_path="", debug=True)
 sockets = Sockets(app)
 
 UPLOAD_FOLDER = "data/"
