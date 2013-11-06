@@ -16,10 +16,15 @@ def trn_socket(ws):
         message = ws.receive()
         print "Running TRN"
         ws.send("Running TRN...")
-        trnInstance = trn.main(UPLOAD_FOLDER + "/wine_noannotation.csv", "35")
+        trnInstance = trn.main(UPLOAD_FOLDER + "wine_noannotation.csv", "35")
         jsonFile = open("graph.json")
         ws.send(jsonFile.read())
 
+@app.route("/runtrn")
+def run_trn():
+    trnInstance = trn.main(UPLOAD_FOLDER + "wine_noannotation.csv", "35")
+    jsonFile = open("graph.json")
+    return jsonFile.read()
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
