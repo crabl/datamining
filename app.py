@@ -3,7 +3,7 @@ from flask_sockets import Sockets
 from werkzeug import secure_filename
 
 import trn
-app = Flask(__name__, static_url_path="", debug=True)
+app = Flask(__name__, static_url_path="")
 sockets = Sockets(app)
 
 UPLOAD_FOLDER = "data/"
@@ -31,4 +31,4 @@ def hello():
     return render_template("index.html")
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
