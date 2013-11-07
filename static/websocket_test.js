@@ -1,6 +1,6 @@
 function displayGraph(graph) {
-  var width = 960,
-      height = 500;
+  var width = $(window).width(),
+      height = $(window).height();
 
   var color = d3.scale.category20();
 
