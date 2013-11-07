@@ -1,5 +1,5 @@
 function getTRNData() {
-  var sock = new WebSocket("ws://"+document.domain+":5000/trn");
+  var sock = new WebSocket("ws://"+document.domain+"/trn");
   sock.onmessage = function(msg) { console.log(msg.data); };
   if(sock.readyState == 1) {
     sock.send('some data');
