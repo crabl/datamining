@@ -29,7 +29,7 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 
         # Progress bar
         amtDone = iter_fraction * 100
-        if amtDone > prevDone + 1:
+        if amtDone > prevDone + 5:
             prevDone = int(amtDone)
             ws.send('{"progress":"'+str(prevDone)+'"}'); # use websockets
         #sys.stdout.write("\r%.1f%%" %amtDone)
