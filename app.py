@@ -19,8 +19,8 @@ def trn_socket(ws):
         print "Created WebSocket"
         message = ws.receive()
         print "Running TRN"
-        ws.send('{"status":"Running TRN..."}')
-        trnInstance = trn.main(UPLOAD_FOLDER + "wine_noannotation.csv", "35")
+        #ws.send('{"status":"Running TRN..."}')
+        trnInstance = trn.main(UPLOAD_FOLDER + "wine_noannotation.csv", "35", ws)
         jsonFile = open("graph.json")
         ws.send(jsonFile.read())
 
