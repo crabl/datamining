@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect, render_template, url_for
 from flask_sockets import Sockets
+import logging
 from werkzeug import secure_filename
 
 import os
@@ -16,11 +17,10 @@ def allowed_file(filename):
 @sockets.route("/trn")
 def trn_socket(ws):
     while True:
-        print "Created WebSocket"
-        message = ws.receive()
-        print "Running TRN"
+        fileName = ws.receive()
+        print fileName
         #ws.send('{"status":"Running TRN..."}')
-        trnInstance = trn.main(UPLOAD_FOLDER + "wine_noannotation.csv", "35", ws)
+        trnInstance = trn.main(UPLOAD_FOLDER + fileName, "35", ws)
         jsonFile = open("graph.json")
         ws.send(jsonFile.read())
 
