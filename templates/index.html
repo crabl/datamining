@@ -3,6 +3,25 @@
 <head>
     <title>Toposerver</title>
     <link href="/nprogress.css" rel="stylesheet">
+    <style>
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+.link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+
+        #toolbar {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+        }
+</style>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="/nprogress.js"></script>
     <script src="/websocket_test.js"></script>
@@ -15,7 +34,10 @@
     </script>
 </head>
 <body>
-    <h1>TRN Project</h1>
-    <button>Run Algorithm</button>
+    <div id="toolbar">
+        <h1>TRN Project</h1>
+        <button>Run Algorithm</button>
+    </div>
+    <svg></svg>
 </body>
 </html>
