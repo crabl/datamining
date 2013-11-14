@@ -6,8 +6,8 @@ from networkx.readwrite import json_graph, write_gexf
 import random
 import heapq
 import sys
-from flask_sockets import Sockets
-#import sklearn.preprocessing as skp
+import sklearn.preprocessing as skp
+from scipy.linalg import eigh as largest_eigh
 
 def random_vector(min_max_pairs):
     v = []
@@ -16,7 +16,19 @@ def random_vector(min_max_pairs):
 
     return np.array(v)
 
-def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, ws):
+def MDS(proximity_matrix, num_points, dimensions):
+    P = proximity_matrix # matrix of SQUARED distances (really this is P^2)
+    I = np.identity(num_points)
+    ONE = np.ones((num_points, num_points))
+    J = I - (1./num_points) * ONE
+    B = -0.5 * J * P * J
+    # Calculate the d largest e-vals (L) and corresponding e-vects (E)
+    (L, E) = largest_eigh(B, eigvals=(num_points - dimensions, num_points - 1))
+    L = np.sqrt(np.flipud(L)) # Sort from highest to lowest and square root
+    E = np.fliplr(E) # sort from largest to smallest positive e-vectors
+    return -1*(E*L) # don't know why we need the -1...
+
+def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
     connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
     dimensions = len(data_set[0])
 
@@ -29,11 +41,8 @@ def trn(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 
         # Progress bar
         amtDone = iter_fraction * 100
-        if amtDone > prevDone + 5:
-            prevDone = int(amtDone)
-            ws.send('{"progress":"'+str(prevDone)+'"}'); # use websockets
-        #sys.stdout.write("\r%.1f%%" %amtDone)
-        #sys.stdout.flush()
+        sys.stdout.write("\r%.1f%%" %amtDone)
+        sys.stdout.flush()
 
         # Select random data point
         random_data_point = data_set[random.randint(0, len(data_set)-1)]
@@ -92,7 +101,7 @@ def output_json(G):
 def output_gexf(G):
     write_gexf(G, "graph.gexf")
 
-def main(fileName, codebookSize, ws):
+def main(fileName, codebookSize):
     raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
     #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
     dataset = raw_dataset
@@ -109,20 +118,22 @@ def main(fileName, codebookSize, ws):
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
 
-    codebook, connections = trn(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, ws)
+    codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
     print "Drawing graph..."
-    G = connections_to_graph(connections, codebook)
-    print G.edges()
-    #draw_graph(G, "graph.png")
-    output_json(G)
-    output_gexf(G)
+    M = connections_to_graph(connections, codebook)
+    print M.edges()
+    #draw_graph(M, "graph.png")
+    #output_json(M)
+    #output_gexf(M)
     print "Done!"
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[0], sys.argv[1])
+
+
 
 
 
