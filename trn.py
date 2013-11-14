@@ -64,9 +64,13 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         epsilon = epsilon_i * ((epsilon_f / epsilon_i) ** iter_fraction);
 
         # This is a huge bottleneck... make it faster
-        for i in xrange(codebook_size):
-            codebooks_near_point_i = (distances < distances[i]).sum()
-            codebook[i] += epsilon * np.exp(-1 * codebooks_near_point_i / lambda_val) * (random_data_point - codebook[i])
+        codebooks_near = np.array([np.exp(-1 * ((distances<distances[i]).sum())/lambda_val) for i in xrange(codebook_size)])
+        coefficients = epsilon * codebooks_near
+        codebook += coefficients.reshape((len(coefficients),1)) * V
+
+        #for i in xrange(codebook_size):
+        #    codebooks_near_point_i = (distances < distances[i]).sum()
+        #    codebook[i] += epsilon * np.exp(-1 * codebooks_near_point_i / lambda_val) * (random_data_point - codebook[i])
 
         # find closest two codebook indices
         smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
@@ -155,4 +159,4 @@ if __name__ == "__main__":
 
 
 
-
+
