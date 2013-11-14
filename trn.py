@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 import matplotlib.pyplot as plt
 #import matplotlib.mlab as mlb
@@ -90,7 +92,7 @@ def connections_to_graph(connections, codebook):
     return G
 
 #def draw_mayavi_graph(G, file_name):
-    
+
 
 def draw_graph(G, file_name):
     nx.draw(G)
@@ -109,8 +111,8 @@ def output_gexf(G):
 
 def main(fileName, codebookSize):
     raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
-    #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
-    dataset = raw_dataset
+    dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
+    #dataset = raw_dataset
     num_points = len(dataset)
     import time
     t0 = time.time()
@@ -134,6 +136,7 @@ def main(fileName, codebookSize):
 
     print "Drawing graph..."
     M = connections_to_graph(connections, scaled_codebook)
+    print "Number of subgraphs:", nx.number_connected_components(M)
     print M.nodes()
     print M.edges()
     draw_graph(M, "graph.png")
@@ -143,6 +146,8 @@ def main(fileName, codebookSize):
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
+
+
 
 
 
