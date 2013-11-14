@@ -8,6 +8,7 @@ import heapq
 import sys
 import sklearn.preprocessing as skp
 from scipy.linalg import eigh as largest_eigh
+import scipy.spatial.distance as dist
 
 def random_vector(min_max_pairs):
     v = []
@@ -16,8 +17,9 @@ def random_vector(min_max_pairs):
 
     return np.array(v)
 
-def MDS(proximity_matrix, num_points, dimensions):
-    P = proximity_matrix # matrix of SQUARED distances (really this is P^2)
+def MDS(codebook, dimensions):
+    num_points = len(codebook)
+    P = dist.squareform(dist.pdist(codebook, 'euclidean'))**2 # matrix of SQUARED distances (really this is P^2)
     I = np.identity(num_points)
     ONE = np.ones((num_points, num_points))
     J = I - (1./num_points) * ONE
@@ -80,10 +82,10 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 def connections_to_graph(connections, codebook):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
-    #x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
-    #y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
-    #nx.set_node_attributes(G, 'x', x_dict)
-    #nx.set_node_attributes(G, 'y', y_dict)
+    x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
+    y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
+    nx.set_node_attributes(G, 'x', x_dict)
+    nx.set_node_attributes(G, 'y', y_dict)
     return G
 
 def draw_graph(G, file_name):
@@ -122,16 +124,20 @@ def main(fileName, codebookSize):
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
+    print "Scaling down to 2 dimensions..."
+    scaled_codebook = MDS(codebook, 2) # scale to 2-dimensional space
+
+
     print "Drawing graph..."
-    M = connections_to_graph(connections, codebook)
+    M = connections_to_graph(connections, scaled_codebook)
     print M.edges()
-    #draw_graph(M, "graph.png")
+    draw_graph(M, "graph.png")
     #output_json(M)
     #output_gexf(M)
     print "Done!"
 
 if __name__ == "__main__":
-    main(sys.argv[0], sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
 
 
 
