@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 #import matplotlib.mlab as mlb
 import networkx as nx
 from networkx.readwrite import json_graph, write_gexf
+#from mayavi import mlab
 import random
 import heapq
 import sys
@@ -88,6 +89,9 @@ def connections_to_graph(connections, codebook):
     nx.set_node_attributes(G, 'y', y_dict)
     return G
 
+#def draw_mayavi_graph(G, file_name):
+    
+
 def draw_graph(G, file_name):
     nx.draw(G)
     plt.savefig(file_name)
@@ -130,9 +134,10 @@ def main(fileName, codebookSize):
 
     print "Drawing graph..."
     M = connections_to_graph(connections, scaled_codebook)
+    print M.nodes()
     print M.edges()
     draw_graph(M, "graph.png")
-    #output_json(M)
+    output_json(M)
     #output_gexf(M)
     print "Done!"
 
