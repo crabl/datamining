@@ -7,3 +7,4 @@ numpy==1.7.1
 redis==2.7.2
 newrelic==2.6.0.5
 scikit-learn
+scipy
