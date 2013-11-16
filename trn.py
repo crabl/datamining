@@ -33,7 +33,7 @@ def MDS(codebook, dimensions):
     E = np.fliplr(E) # sort from largest to smallest positive e-vectors
     return -1*(E*L) # don't know why we need the -1...
 
-def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
+def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path):
     connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
     dimensions = len(data_set[0])
 
@@ -84,27 +84,36 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         np.putmask(connections, connections != 0, connections + 1) # Age all non-zero entries (zero => no connection)
         np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
 
+        # Intermediary graph
+        G_i = nx.Graph()
+        G_i, pos = connections_to_graph(connections, MDS(codebook, 2))
+        draw_graph(G_i, pos, folder_path+"/graph_"+str(t)+".jpg")
+
     return codebook, connections
 
 def connections_to_graph(connections, codebook):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
-    x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
-    y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
-    nx.set_node_attributes(G, 'x', x_dict)
-    nx.set_node_attributes(G, 'y', y_dict)
-    return G
+    #print codebook
+    #x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
+    #y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
+    #nx.set_node_attributes(G, 'x', x_dict)
+    #nx.set_node_attributes(G, 'y', y_dict)
+    positions = dict(zip(range(0,len(codebook)), codebook))
+    return G, positions
 
 #def draw_mayavi_graph(G, file_name):
 
 
-def draw_graph(G, file_name):
-    nx.draw(G)
-    plt.savefig(file_name)
+def draw_graph(G, positions, file_name):
+    plt.clf() # Clear the figure
+    plt.autoscale(True, 'both', True)
+    nx.draw(G, pos=positions)
+    plt.savefig(file_name, filetype='jpg')
 
-def output_json(G):
+def output_json(G, file_name):
     import json
-    f = open("graph.json", "w")
+    f = open(file_name, "w")
     data = json_graph.node_link_data(G)
     serialized_data = json.dumps(data)
     f.write(serialized_data)
@@ -129,8 +138,10 @@ def main(fileName, codebookSize):
     codebook_size = int(codebookSize)
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
+    
+    folder_path = sys.argv[3]
 
-    codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
+    codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
@@ -144,7 +155,7 @@ def main(fileName, codebookSize):
     print M.nodes()
     print M.edges()
     draw_graph(M, "graph.png")
-    output_json(M)
+    output_json(M, "graph.json")
     #output_gexf(M)
     print "Done!"
 
