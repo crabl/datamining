@@ -12,6 +12,7 @@ import sys
 import sklearn.preprocessing as skp
 from scipy.linalg import eigh as largest_eigh
 import scipy.spatial.distance as dist
+from mpl_toolkits.mplot3d import Axes3D
 
 def random_vector(min_max_pairs):
     v = []
@@ -37,8 +38,12 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
     connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
     dimensions = len(data_set[0])
 
+    #3d view settings
+    elevation = 30
+    azimuth = 45
+
     # generate codebook vectors
-    codebook = np.array([random_vector([(-100, 100) for k in xrange(dimensions)]) for i in xrange(codebook_size)])
+    codebook = np.array([random_vector([(0, 30) for k in xrange(dimensions)]) for i in xrange(codebook_size)])
 
     prevDone = 0
     for t in xrange(max_iterations):
@@ -85,9 +90,12 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
 
         # Intermediary graph
-        G_i = nx.Graph()
-        G_i, pos = connections_to_graph(connections, MDS(codebook, 2))
-        draw_graph(G_i, pos, folder_path+"/graph_"+str(t)+".jpg")
+        if t % 50 == 0:
+            G_i = nx.Graph()
+            G_i, pos = connections_to_graph(connections, codebook)
+            azimuth += 0.7
+            azimuth = azimuth % 360
+            draw_graph(G_i, pos, data_set, folder_path+"/graph_"+str(t)+".jpg", elevation, azimuth)
 
     return codebook, connections
 
@@ -105,11 +113,26 @@ def connections_to_graph(connections, codebook):
 #def draw_mayavi_graph(G, file_name):
 
 
-def draw_graph(G, positions, file_name):
+def draw_graph(G, positions, dataset, file_name, el, az):
     plt.clf() # Clear the figure
-    plt.autoscale(True, 'both', True)
-    nx.draw(G, pos=positions)
-    plt.savefig(file_name, filetype='jpg')
+    fig = plt.figure()
+    plt.figure.max_num_figures = 20
+    ax = fig.add_subplot(111, projection='3d')
+    
+    #draw lines between codebook vectors
+    lines = [[positions[x],positions[y]] for (x,y) in G.edges()]
+    for line in lines:
+        x,y,z = zip(*line)
+        ax.plot(x,y,z, color='#000000', ls='-', alpha=0.25)
+
+    ax.plot(*zip(*[positions[i] for i in positions.keys()]), marker='o', color='#BEF202', ls='')
+    ax.plot(*zip(*dataset), marker=',', color='b', ls='')
+
+    ax.view_init(el, az)
+    #plt.autoscale(True, "both", True)
+    #plt.plot(*zip(*dataset), marker='.', color='b', ls='')
+    #nx.draw(G, pos=positions, node_color="#BEF202", dim=3)
+    fig.savefig(file_name, filetype="jpg")
 
 def output_json(G, file_name):
     import json
@@ -124,8 +147,8 @@ def output_gexf(G):
 
 def main(fileName, codebookSize):
     raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
-    dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
-    #dataset = raw_dataset
+    #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
+    dataset = raw_dataset
     num_points = len(dataset)
     import time
     t0 = time.time()
@@ -138,7 +161,7 @@ def main(fileName, codebookSize):
     codebook_size = int(codebookSize)
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
-    
+
     folder_path = sys.argv[3]
 
     codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
@@ -151,10 +174,10 @@ def main(fileName, codebookSize):
 
     print "Drawing graph..."
     M = connections_to_graph(connections, scaled_codebook)
-    print "Number of subgraphs:", nx.number_connected_components(M)
-    print M.nodes()
-    print M.edges()
-    draw_graph(M, "graph.png")
+    #print "Number of subgraphs:", nx.number_connected_components(M)
+    #print M.nodes()
+    #print M.edges()
+    #draw_graph(M, "graph.png")
     output_json(M, "graph.json")
     #output_gexf(M)
     print "Done!"
