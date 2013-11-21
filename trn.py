@@ -67,10 +67,10 @@ def MDS(codebook, dimensions):
     ONE = np.ones((num_points, num_points))
     J = I - (1./num_points) * ONE
     B = -0.5 * J * P * J
-    # Calculate the d largest e-vals (L) and corresponding e-vects (E)
+    # Calculate the d largest eigenvalues (L) and corresponding eigenvectors (E)
     (L, E) = largest_eigh(B, eigvals=(num_points - dimensions, num_points - 1))
     L = np.sqrt(np.flipud(L)) # Sort from highest to lowest and square root
-    E = np.fliplr(E) # sort from largest to smallest positive e-vectors
+    E = np.fliplr(E) # sort from largest to smallest positive eigenvectors
     return -1*(E*L) # don't know why we need the -1...
 
 def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path):
@@ -148,9 +148,6 @@ def connections_to_graph(codebook, connections):
     positions = dict(zip(range(0,len(codebook)), codebook))
     return G, positions
 
-#def draw_mayavi_graph(G, file_name):
-
-
 def draw_graph(G, positions, dataset, file_name, el, az):
     plt.clf() # Clear the figure
     fig = plt.figure()
@@ -164,12 +161,9 @@ def draw_graph(G, positions, dataset, file_name, el, az):
         ax.plot(x,y,z, color='#000000', ls='-', alpha=0.25)
 
     ax.plot(*zip(*[positions[i] for i in positions.keys()]), marker='o', color='#BEF202', ls='')
-    ax.plot(*zip(*dataset), marker='.', color='b', ls='')
+    ax.plot(*zip(*dataset), marker=',', color='b', ls='')
 
     ax.view_init(el, az)
-    #plt.autoscale(True, "both", True)
-    #plt.plot(*zip(*dataset), marker='.', color='b', ls='')
-    #nx.draw(G, pos=positions, node_color="#BEF202", dim=3)
     fig.savefig(file_name, filetype="jpg")
 
 def output_json(G, file_name):
@@ -204,7 +198,7 @@ def main(fileName, codebookSize):
     # Calculate TRN
     codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
 
-    # Change connections to a boolean array, since it stores connection ages
+    # Change connections to a boolean array, since it currently stores connection ages
     np.putmask(connections, connections > 1, 1.) # Needs to be a binary matrix
     print ""
 
@@ -220,10 +214,13 @@ def main(fileName, codebookSize):
     scaled_codebook = MDS(codebook, 2)
 
     print "Drawing graph..."
-    M, positions = connections_to_graph(scaled_codebook, connections)
-    nx.draw(M, pos=positions, node_color="#BEF202", dim=3)
-    plt.savefig("graph.jpg", filetype="jpg")
-    #draw_graph(M, positions, dataset, "graph.jpg", 45, 30)
+    M, positions = connections_to_graph(codebook, connections)
+    N, scaled_positions = connections_to_graph(scaled_codebook, connections)
+    nx.draw(N, pos=scaled_positions, node_color="#BEF202", dim=2)
+    plt.savefig("graph_2d.jpg", filetype="jpg")
+    for i in range(0,360):
+        draw_graph(M, positions, dataset, folder_path+"/graph_3d_"+str(i)+".jpg", 30, i)
+
     #print "Number of subgraphs:", nx.number_connected_components(M)
     #print M.nodes()
     #print M.edges()
