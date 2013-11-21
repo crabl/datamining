@@ -58,6 +58,7 @@ def connect_graph(codebook, connections):
         np.putmask(candidate_edges, candidate_edges <= 0, np.nan)
 
         num_subgraphs = len(np.unique(candidate_edges.argmin(0)))
+    print "Done!",
 
     return connections
 
@@ -127,10 +128,16 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 
     return codebook, connections
 
-def connections_to_graph(codebook, connections):
+def connections_to_graph(codebook_2d, connections):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
-    positions = dict(zip(range(0,len(codebook)), codebook))
+    x_dict = dict(zip(range(len(codebook_2d[:,0])), codebook_2d[:,0]))
+    y_dict = dict(zip(range(len(codebook_2d[:,1])), codebook_2d[:,1]))
+    nx.set_node_attributes(G, 'x', x_dict)
+    nx.set_node_attributes(G, 'y', y_dict)
+
+    positions = dict(zip(range(0,len(codebook_2d)), codebook_2d))
+
     return G, positions
 
 def draw_graph_3d(G, positions, dataset, file_name, el, az):
@@ -198,7 +205,6 @@ def main(fileName, codebookSize):
     scaled_codebook = MDS(codebook, 2)
 
     print "Drawing graph..."
-    M, positions = connections_to_graph(codebook, connections)
     N, scaled_positions = connections_to_graph(scaled_codebook, connections)
     nx.draw(N, pos=scaled_positions, node_color="#BEF202", dim=2)
     plt.savefig("graph_2d.jpg", filetype="jpg")
