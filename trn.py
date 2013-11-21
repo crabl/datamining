@@ -27,7 +27,7 @@ def l2_distance(u, v):
 
 def geodesic_distance(codebook, connections):
     distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
-    sparse_distances = sparse.csr_matrix(distances * connections)
+    sparse_distances = distances * connections
     geo = sparse.csgraph.dijkstra(sparse_distances,indices=range(0, len(codebook)))
     return geo
 
@@ -35,22 +35,22 @@ def connect_graph(codebook, connections):
     distances = geodesic_distance(codebook, connections)
     new_connections = connections
     dists = (distances == np.inf)
-    tmp, firsts = dists.min(0), dists.argmin(0)
-    comps, I, J = unique(firsts, return_index=True, return_inverse=True)
+    firsts = dists.argmin(0)
+    comps, I, J = np.unique(firsts, return_index=True, return_inverse=True)
     n_comps = len(comps)
 
     while n_comps > 1:
-        w0 = ()
-        w1 = ()
+        w0 = codebook.take((J==1).nonzero(), axis=0)
+        w1 = codebook.take((J>1).nonzero(), axis=0)
 
         w0_w1_eu = l2_distance(w0, w1)
         mindist = np.min(np.min(w0_w1_eu))
 
         ind_w0 = 0
-        if len(eu.shape) == 1:
-            ind_w1 = (eu.mindist).nonzero()
+        if len(w0_w1_eu.shape) == 1:
+            ind_w1 = (w0_w1_eu.mindist).nonzero()
         else:
-            (ind_w0, ind_w1) = (eu==mindist).nonzero()
+            (ind_w0, ind_w1) = (w0_w1_eu==mindist).nonzero()
 
         w0_index = (J==1).nonzero()
         w1_index = (J>1).nonzero()
@@ -59,24 +59,11 @@ def connect_graph(codebook, connections):
         new_connections[(w1_index[ind_w1], w0_index[ind_w0])] = 1
         distances = geodesic_distance(codebook, new_connections)
         dists = (distances == np.inf)
-        tmp, firsts = dists.min(0), dists.argmin(0)
-        comps, I, J = unique(firsts, return_index=True, return_inverse=True)
+        firsts = dists.argmin(0)
+        comps, I, J = np.unique(firsts, return_index=True, return_inverse=True)
         n_comps = len(comps)
 
-    """
-    while n_comps>1
-        w0=w(:,J==1);
-        w1=w(:,J>1);
-        w0_w1_eu=L2_distance(w0,w1);
-        mindist=min(min(w0_w1_eu));       %% minimal distances between the group and the another objects
-        [row col]=find(w0_w1_eu==mindist);  %% indicies of the nearest objects in the subgroups
-        w0_index=find(J==1);              %% indicies of the subgroups
-        w1_index=find(J>1);
-
-
-
-    """
-
+    return new_connections
 
 
 def MDS(codebook, dimensions):
