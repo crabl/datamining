@@ -2,10 +2,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib.mlab as mlb
 import networkx as nx
 from networkx.readwrite import json_graph, write_gexf
-#from mayavi import mlab
 import random
 import heapq
 import sys
@@ -13,6 +11,8 @@ import sklearn.preprocessing as skp
 from scipy.linalg import eigh as largest_eigh
 import scipy.spatial.distance as dist
 from mpl_toolkits.mplot3d import Axes3D
+import scipy.io as scio
+import scipy.sparse as sparse
 
 def random_vector(min_max_pairs):
     v = []
@@ -20,6 +20,17 @@ def random_vector(min_max_pairs):
         v.append(random.uniform(min_val, max_val))
 
     return np.array(v)
+
+def geodesic_distance(codebook, connections):
+    distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
+    sparse_distances = sparse.csr_matrix(distances * connections)
+    geo = sparse.csgraph.dijkstra(sparse_distances,indices=range(0, len(codebook)))
+    return geo
+
+def connect_graph(codebook, connections):
+    raise NotImplementedError
+
+
 
 def MDS(codebook, dimensions):
     num_points = len(codebook)
@@ -43,7 +54,7 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
     azimuth = 45
 
     # generate codebook vectors
-    codebook = np.array([random_vector([(0, 30) for k in xrange(dimensions)]) for i in xrange(codebook_size)])
+    codebook = np.array([random_vector([(0, 1) for k in xrange(dimensions)]) for i in xrange(codebook_size)])
 
     prevDone = 0
     for t in xrange(max_iterations):
@@ -102,11 +113,6 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 def connections_to_graph(connections, codebook):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
-    #print codebook
-    #x_dict = dict(zip(range(len(codebook[:,0])), codebook[:,0]))
-    #y_dict = dict(zip(range(len(codebook[:,1])), codebook[:,1]))
-    #nx.set_node_attributes(G, 'x', x_dict)
-    #nx.set_node_attributes(G, 'y', y_dict)
     positions = dict(zip(range(0,len(codebook)), codebook))
     return G, positions
 
@@ -118,7 +124,7 @@ def draw_graph(G, positions, dataset, file_name, el, az):
     fig = plt.figure()
     plt.figure.max_num_figures = 20
     ax = fig.add_subplot(111, projection='3d')
-    
+
     #draw lines between codebook vectors
     lines = [[positions[x],positions[y]] for (x,y) in G.edges()]
     for line in lines:
@@ -126,13 +132,13 @@ def draw_graph(G, positions, dataset, file_name, el, az):
         ax.plot(x,y,z, color='#000000', ls='-', alpha=0.25)
 
     ax.plot(*zip(*[positions[i] for i in positions.keys()]), marker='o', color='#BEF202', ls='')
-    ax.plot(*zip(*dataset), marker=',', color='b', ls='')
+    ax.plot(*zip(*dataset), marker='.', color='b', ls='')
 
     ax.view_init(el, az)
     #plt.autoscale(True, "both", True)
     #plt.plot(*zip(*dataset), marker='.', color='b', ls='')
     #nx.draw(G, pos=positions, node_color="#BEF202", dim=3)
-    fig.savefig(file_name, filetype="jpg")
+    #fig.savefig(file_name, filetype="jpg")
 
 def output_json(G, file_name):
     import json
@@ -165,6 +171,12 @@ def main(fileName, codebookSize):
     folder_path = sys.argv[3]
 
     codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
+    np.putmask(connections, connections > 1, 1.) # Needs to be a binary matrix
+    print ""
+    print geodesic_distance(codebook, connections)
+    scio.savemat("codebook.mat", mdict={'codebook':codebook})
+    print ""
+    scio.savemat("connections.mat", mdict={'connections': connections})
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
@@ -178,7 +190,7 @@ def main(fileName, codebookSize):
     #print M.nodes()
     #print M.edges()
     #draw_graph(M, "graph.png")
-    output_json(M, "graph.json")
+    #output_json(M, "graph.json")
     #output_gexf(M)
     print "Done!"
 
