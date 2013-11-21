@@ -21,50 +21,44 @@ def random_vector(min_max_pairs):
 
     return np.array(v)
 
-def l2_distance(u, v):
-    w = u - v
-    return np.apply_along_axis(np.linalg.norm, 1, w)
-
 def geodesic_distance(codebook, connections):
     distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
-    sparse_distances = distances * connections
-    geo = sparse.csgraph.dijkstra(sparse_distances,indices=range(0, len(codebook)))
+    graph_edges = np.multiply(distances, connections)
+    geo = sparse.csgraph.dijkstra(graph_edges,indices=range(0, len(codebook)))
     return geo
 
 def connect_graph(codebook, connections):
-    distances = geodesic_distance(codebook, connections)
-    new_connections = connections
-    dists = (distances == np.inf)
-    firsts = dists.argmin(0)
-    comps, I, J = np.unique(firsts, return_index=True, return_inverse=True)
-    n_comps = len(comps)
+    dijkstra_distances = geodesic_distance(codebook, connections)
+    np.putmask(dijkstra_distances, dijkstra_distances==np.inf, 0) # replace all infinite edges with 0
 
-    while n_comps > 1:
-        w0 = codebook.take((J==1).nonzero(), axis=0)
-        w1 = codebook.take((J>1).nonzero(), axis=0)
+    distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
 
-        w0_w1_eu = l2_distance(w0, w1)
-        mindist = np.min(np.min(w0_w1_eu))
+    candidate_edges = distances - dijkstra_distances
+    np.putmask(candidate_edges, candidate_edges <= 0, np.nan)
 
-        ind_w0 = 0
-        if len(w0_w1_eu.shape) == 1:
-            ind_w1 = (w0_w1_eu.mindist).nonzero()
-        else:
-            (ind_w0, ind_w1) = (w0_w1_eu==mindist).nonzero()
+    num_subgraphs = len(np.unique(candidate_edges.argmin(0)))
 
-        w0_index = (J==1).nonzero()
-        w1_index = (J>1).nonzero()
+    while num_subgraphs > 1:
+        shortest_new_edge = np.nanmin(candidate_edges) # Find the smallest entry
+        new_edge_indices = np.where(candidate_edges==shortest_new_edge) # Find the indices of that entry
 
-        new_connections[(w0_index[ind_w0], w1_index[ind_w1])] = 1
-        new_connections[(w1_index[ind_w1], w0_index[ind_w0])] = 1
-        distances = geodesic_distance(codebook, new_connections)
-        dists = (distances == np.inf)
-        firsts = dists.argmin(0)
-        comps, I, J = np.unique(firsts, return_index=True, return_inverse=True)
-        n_comps = len(comps)
+        if len(new_edge_indices[0]) > 1:
+            new_edge_indices = new_edge_indices[0]
 
-    return new_connections
+        connections[new_edge_indices[0], new_edge_indices[1]] = 1 # Add the new edge to the connection graph
+        connections[new_edge_indices[1], new_edge_indices[0]] = 1
 
+        dijkstra_distances = geodesic_distance(codebook, connections)
+        np.putmask(dijkstra_distances, dijkstra_distances==np.inf, 0) # replace all infinite edges with 0
+
+        distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
+
+        candidate_edges = distances - dijkstra_distances
+        np.putmask(candidate_edges, candidate_edges <= 0, np.nan)
+
+        num_subgraphs = len(np.unique(candidate_edges.argmin(0)))
+
+    return connections
 
 def MDS(codebook, dimensions):
     num_points = len(codebook)
@@ -148,7 +142,7 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
 
     return codebook, connections
 
-def connections_to_graph(connections, codebook):
+def connections_to_graph(codebook, connections):
     np.putmask(connections, connections > 1, 1)
     G = nx.Graph(connections)
     positions = dict(zip(range(0,len(codebook)), codebook))
@@ -176,7 +170,7 @@ def draw_graph(G, positions, dataset, file_name, el, az):
     #plt.autoscale(True, "both", True)
     #plt.plot(*zip(*dataset), marker='.', color='b', ls='')
     #nx.draw(G, pos=positions, node_color="#BEF202", dim=3)
-    #fig.savefig(file_name, filetype="jpg")
+    fig.savefig(file_name, filetype="jpg")
 
 def output_json(G, file_name):
     import json
@@ -214,13 +208,9 @@ def main(fileName, codebookSize):
     np.putmask(connections, connections > 1, 1.) # Needs to be a binary matrix
     print ""
 
-    # Calculate geodesic distances between codebooks
-    print geodesic_distance(codebook, connections)
-
-
-    scio.savemat("codebook.mat", mdict={'codebook':codebook})
-    print ""
-    scio.savemat("connections.mat", mdict={'connections': connections})
+    # Connect the graph
+    print "Connecting unconnected edges..."
+    connections = connect_graph(codebook, connections)
     print ""
     print "TRN Runtime:", time.time() - t0, "seconds"
 
@@ -229,9 +219,11 @@ def main(fileName, codebookSize):
     # Scale codebook down to two dimensions using MDS
     scaled_codebook = MDS(codebook, 2)
 
-
     print "Drawing graph..."
-    M = connections_to_graph(connections, scaled_codebook)
+    M, positions = connections_to_graph(scaled_codebook, connections)
+    nx.draw(M, pos=positions, node_color="#BEF202", dim=3)
+    plt.savefig("graph.jpg", filetype="jpg")
+    #draw_graph(M, positions, dataset, "graph.jpg", 45, 30)
     #print "Number of subgraphs:", nx.number_connected_components(M)
     #print M.nodes()
     #print M.edges()
