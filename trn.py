@@ -21,6 +21,10 @@ def random_vector(min_max_pairs):
 
     return np.array(v)
 
+def l2_distance(u, v):
+    w = u - v
+    return np.apply_along_axis(np.linalg.norm, 1, w)
+
 def geodesic_distance(codebook, connections):
     distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
     sparse_distances = sparse.csr_matrix(distances * connections)
@@ -38,15 +42,26 @@ def connect_graph(codebook, connections):
     n_comps = len(comps)
 
     while n_comps > 1:
-        w_0 = ""
+        w0 = ()
+        w1 = ()
+
+        w0_w1_eu = l2_distance(w0, w1)
+        mindist = np.min(np.min(w0_w1_eu))
+
+        ind_w0(eu==mindist).nonzero()[0][0]
+
+        w0_index = (J==1).nonzero()
+        w1_index = (J>1).nonzero()
+
+        new_connections[(w0_index[ind_w0], w1_index[ind_w1])] = 1
+        new_connections[(w1_index[ind_w1], w0_index[ind_w0])] = 1
+        distances = geodesic_distance(codebook, new_connections)
+        dists = (distances == np.inf)
+        tmp, firsts = dists.min(0), dists.argmin(0)
+        comps, I, J = unique(firsts, return_index=True, return_inverse=True)
+        n_comps = len(comps)
 
     """
-    cd_geo=geo_dist(w,C_orig);
-
-    C_mod=C_orig;
-    [tmp, firsts] = min(cd_geo==Inf);     %% first point each point connects to
-    [comps, I, J] = unique(firsts);
-    n_comps = length(comps);
     while n_comps>1
         w0=w(:,J==1);
         w1=w(:,J>1);
@@ -55,14 +70,9 @@ def connect_graph(codebook, connections):
         [ind_w0 ind_w1]=find(w0_w1_eu==mindist);  %% indicies of the nearest objects in the subgroups
         w0_index=find(J==1);              %% indicies of the subgroups
         w1_index=find(J>1);
-        C_mod(w0_index(ind_w0),w1_index(ind_w1))=1;
-        C_mod(w1_index(ind_w1),w0_index(ind_w0))=1;
 
-        cd_geo=geo_dist(w,C_mod);
-        [tmp, firsts] = min(cd_geo==Inf);     %% first point each point connects to
-        [comps, I, J] = unique(firsts);
-        n_comps = length(comps);
-    end
+
+
     """
 
 
@@ -206,13 +216,19 @@ def main(fileName, codebookSize):
     codebook_size = int(codebookSize)
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
-
     folder_path = sys.argv[3]
 
+    # Calculate TRN
     codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
+
+    # Change connections to a boolean array, since it stores connection ages
     np.putmask(connections, connections > 1, 1.) # Needs to be a binary matrix
     print ""
+
+    # Calculate geodesic distances between codebooks
     print geodesic_distance(codebook, connections)
+
+
     scio.savemat("codebook.mat", mdict={'codebook':codebook})
     print ""
     scio.savemat("connections.mat", mdict={'connections': connections})
@@ -220,7 +236,9 @@ def main(fileName, codebookSize):
     print "TRN Runtime:", time.time() - t0, "seconds"
 
     print "Scaling down to 2 dimensions..."
-    scaled_codebook = MDS(codebook, 2) # scale to 2-dimensional space
+
+    # Scale codebook down to two dimensions using MDS
+    scaled_codebook = MDS(codebook, 2)
 
 
     print "Drawing graph..."
@@ -235,13 +253,3 @@ def main(fileName, codebookSize):
 
 if __name__ == "__main__":
     main(sys.argv[1], sys.argv[2])
-
-
-
-
-
-
-
-
-
-
