@@ -37,8 +37,9 @@ def connect_graph(codebook, connections):
     np.putmask(candidate_edges, candidate_edges <= 0, np.nan)
 
     num_subgraphs = len(np.unique(candidate_edges.argmin(0)))
-
+    print "    Remaining subgraphs: ",
     while num_subgraphs > 1:
+        print num_subgraphs, 
         shortest_new_edge = np.nanmin(candidate_edges) # Find the smallest entry
         new_edge_indices = np.where(candidate_edges==shortest_new_edge) # Find the indices of that entry
 
@@ -73,7 +74,7 @@ def MDS(codebook, dimensions):
     E = np.fliplr(E) # sort from largest to smallest positive eigenvectors
     return -1*(E*L) # don't know why we need the -1...
 
-def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path):
+def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f):
     connections = np.zeros((codebook_size, codebook_size), dtype=np.uint16)
     dimensions = len(data_set[0])
 
@@ -112,12 +113,6 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         coefficients = epsilon * codebooks_near
         codebook += coefficients.reshape((len(coefficients),1)) * V
 
-        """
-        for i in xrange(codebook_size):
-            codebooks_near_point_i = (distances < distances[i]).sum()
-            codebook[i] += epsilon * np.exp(-1 * codebooks_near_point_i / lambda_val) * (random_data_point - codebook[i])
-        """
-
         # find closest two codebook indices
         smallest1, smallest2 = heapq.nsmallest(2, [(v, i) for (i, v) in enumerate(distances)])
         index_smallest1, index_smallest2 = smallest1[1], smallest2[1]
@@ -130,16 +125,6 @@ def TRN(data_set, max_iterations, codebook_size, epsilon_i, epsilon_f, lambda_i,
         np.putmask(connections, connections != 0, connections + 1) # Age all non-zero entries (zero => no connection)
         np.putmask(connections, connections > max_age, 0) # Remove connections greater than max age
 
-        # Intermediary graph
-        """
-        if t % 50 == 0:
-            G_i = nx.Graph()
-            G_i, pos = connections_to_graph(connections, codebook)
-            azimuth += 0.7
-            azimuth = azimuth % 360
-            draw_graph(G_i, pos, data_set, folder_path+"/graph_"+str(t)+".jpg", elevation, azimuth)
-        """
-
     return codebook, connections
 
 def connections_to_graph(codebook, connections):
@@ -148,7 +133,7 @@ def connections_to_graph(codebook, connections):
     positions = dict(zip(range(0,len(codebook)), codebook))
     return G, positions
 
-def draw_graph(G, positions, dataset, file_name, el, az):
+def draw_graph_3d(G, positions, dataset, file_name, el, az):
     plt.clf() # Clear the figure
     fig = plt.figure()
     plt.figure.max_num_figures = 20
@@ -193,10 +178,9 @@ def main(fileName, codebookSize):
     codebook_size = int(codebookSize)
     max_iter = 200 * codebook_size
     print "Constructing network on", len(dataset), "data points using", codebook_size, "codebook vectors..."
-    folder_path = sys.argv[3]
 
     # Calculate TRN
-    codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f, folder_path)
+    codebook, connections = TRN(dataset, max_iter, codebook_size, epsilon_i, epsilon_f, lambda_i, lambda_f, T_i, T_f)
 
     # Change connections to a boolean array, since it currently stores connection ages
     np.putmask(connections, connections > 1, 1.) # Needs to be a binary matrix
@@ -218,14 +202,13 @@ def main(fileName, codebookSize):
     N, scaled_positions = connections_to_graph(scaled_codebook, connections)
     nx.draw(N, pos=scaled_positions, node_color="#BEF202", dim=2)
     plt.savefig("graph_2d.jpg", filetype="jpg")
-    for i in range(0,360):
-        draw_graph(M, positions, dataset, folder_path+"/graph_3d_"+str(i)+".jpg", 30, i)
+    #for i in range(0,360):
+    #    draw_graph_3d(M, positions, dataset, folder_path+"/graph_3d_"+str(i)+".jpg", 30, i)
 
     #print "Number of subgraphs:", nx.number_connected_components(M)
     #print M.nodes()
     #print M.edges()
-    #draw_graph(M, "graph.png")
-    #output_json(M, "graph.json")
+    output_json(N, "graph.json")
     #output_gexf(M)
     print "Done!"
 
