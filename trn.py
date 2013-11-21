@@ -32,8 +32,6 @@ def geodesic_distance(codebook, connections):
     return geo
 
 def connect_graph(codebook, connections):
-    raise NotImplementedError
-
     distances = geodesic_distance(codebook, connections)
     new_connections = connections
     dists = (distances == np.inf)
@@ -48,7 +46,11 @@ def connect_graph(codebook, connections):
         w0_w1_eu = l2_distance(w0, w1)
         mindist = np.min(np.min(w0_w1_eu))
 
-        ind_w0(eu==mindist).nonzero()[0][0]
+        ind_w0 = 0
+        if len(eu.shape) == 1:
+            ind_w1 = (eu.mindist).nonzero()
+        else:
+            (ind_w0, ind_w1) = (eu==mindist).nonzero()
 
         w0_index = (J==1).nonzero()
         w1_index = (J>1).nonzero()
@@ -67,7 +69,7 @@ def connect_graph(codebook, connections):
         w1=w(:,J>1);
         w0_w1_eu=L2_distance(w0,w1);
         mindist=min(min(w0_w1_eu));       %% minimal distances between the group and the another objects
-        [ind_w0 ind_w1]=find(w0_w1_eu==mindist);  %% indicies of the nearest objects in the subgroups
+        [row col]=find(w0_w1_eu==mindist);  %% indicies of the nearest objects in the subgroups
         w0_index=find(J==1);              %% indicies of the subgroups
         w1_index=find(J>1);
 
