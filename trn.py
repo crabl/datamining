@@ -248,7 +248,27 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
 
             # Plot edges
             for edge in G.edges():
-                edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]]))
+                edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]], color="#ffffff"))
+
+            # Color vertices by unscaled codebook column value
+            # 1. Output column labels (genfromtxt should give us this)
+            # 2. Ask user to choose one
+            # 3. Apply coloring to all vertices
+            col_num = 2
+            codebook_column = codebook[:, col_num]
+            minval = np.min(codebook_column)
+            maxval = np.max(codebook_column)
+
+            val = 0
+            i = 0
+            for vertex in G.nodes():
+                val = codebook_column[i]
+                scaled_color = int(float(maxval-val) / (maxval-minval) * 16777215)
+                hex_string = str(hex(scaled_color))[2:]
+                hex_string = "#" + ("0" * (6-len(hex_string))) + hex_string
+                vertices[vertex].set(color=hex_string)
+                i+=1
+
 
     print "Done!"
 
