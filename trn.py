@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# TRNMap Algorithm by Vass-Fogarassy, Ábonyi, et al. [2008]
+# TRNMap Algorithm by Vass-Fogarassy, Abonyi, et al. [2008]
 # Implemented in Numpy by Christopher Rabl
 
 import numpy as np
@@ -16,6 +16,7 @@ import scipy.spatial.distance as dist
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.io as scio
 import scipy.sparse as sparse
+import ubigraph
 
 def random_vector(min_max_pairs):
     v = []
@@ -183,7 +184,7 @@ def output_json(G, file_name):
 def output_gexf(G):
     write_gexf(G, "graph.gexf")
 
-def main(fileName, codebookSize):
+def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
     raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
     #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
     dataset = raw_dataset
@@ -211,20 +212,38 @@ def main(fileName, codebookSize):
     print "Connecting unconnected edges..."
     connections = connect_graph(codebook, connections)
     print ""
-    print "Scaling down to 2 dimensions..."
+    print "Scaling down to", scaleToDimension,"dimensions..."
 
     # Scale codebook down to two dimensions using MDS
-    scaled_codebook = MDS(codebook, 2)
+    scaled_codebook = MDS(codebook, scaleToDimension)
     print "TRNMap Runtime:", time.time() - t0, "seconds"
 
-    print "Drawing graph..."
-    N, scaled_positions = connections_to_graph(scaled_codebook, connections)
+    print "Exporting to JSON..."
+    G, scaled_positions = connections_to_graph(scaled_codebook, connections)
     #nx.draw(N, pos=scaled_positions, node_color="#BEF202", dim=2)
     #plt.savefig("graph_2d.jpg", filetype="jpg")
 
     # Output graph to JSON that Sigma/D3.js can read
-    output_json(N, "graph.json")
+    output_json(G, "graph.json")
+
+    # Draw Ubigraph if user requests it
+    if drawUbigraph:
+        print "Drawing in UbiGraph..."
+        vertices = {}
+        edges = []
+        U = ubigraph.Ubigraph()
+        U.clear()
+
+        # Plot vertices
+        for vertex in G.nodes():
+            vertices[vertex] = U.newVertex(vertex)
+
+        # Plot edges
+        for edge in G.edges():
+            edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]]))
+
     print "Done!"
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), bool(sys.argv[4]))
+
