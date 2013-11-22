@@ -17,6 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.io as scio
 import scipy.sparse as sparse
 import ubigraph
+import subprocess
 
 def random_vector(min_max_pairs):
     v = []
@@ -228,19 +229,26 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
 
     # Draw Ubigraph if user requests it
     if drawUbigraph:
-        print "Drawing in UbiGraph..."
-        vertices = {}
-        edges = []
-        U = ubigraph.Ubigraph()
-        U.clear()
+        try:
+            print "<< STARTING UBIGRAPH SERVER >>"
+            subprocess.Popen("../bin/ubigraph_server") # Try to 
+            time.sleep(1)
+        except:
+            print "Error: UbiGraph not found. Put it in ../bin/ubigraph_server"
+        else:
+            print "Drawing in UbiGraph..."
+            vertices = {}
+            edges = []
+            U = ubigraph.Ubigraph()
+            U.clear()
 
-        # Plot vertices
-        for vertex in G.nodes():
-            vertices[vertex] = U.newVertex(vertex)
+            # Plot vertices
+            for vertex in G.nodes():
+                vertices[vertex] = U.newVertex(vertex)
 
-        # Plot edges
-        for edge in G.edges():
-            edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]]))
+            # Plot edges
+            for edge in G.edges():
+                edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]]))
 
     print "Done!"
 
