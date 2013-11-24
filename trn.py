@@ -244,11 +244,11 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
 
             # Plot vertices
             for vertex in G.nodes():
-                vertices[vertex] = U.newVertex(vertex)
+                vertices[vertex] = U.newVertex(vertex, size=2.0)
 
             # Plot edges
             for edge in G.edges():
-                edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]], color="#ffffff"))
+                edges.append(U.newEdge(vertices[edge[0]], vertices[edge[1]], color="#ffffff", width=2.0))
 
             # Color vertices by unscaled codebook column value
             # 1. Output column labels (genfromtxt should give us this)
@@ -261,11 +261,29 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
 
             val = 0
             i = 0
+            red = 0
+            blue = 0
             for vertex in G.nodes():
                 val = codebook_column[i]
-                scaled_color = int(float(maxval-val) / (maxval-minval) * 16777215)
-                hex_string = str(hex(scaled_color))[2:]
-                hex_string = "#" + ("0" * (6-len(hex_string))) + hex_string
+                scaled_val = float(maxval-val) / (maxval-minval)
+                if 0 <= scaled_val < 0.5:
+                    red = 0xff
+                    blue = hex(int(2*scaled_val*223+32))
+                elif scaled_val == 0.5:
+                    red = 0xff
+                    blue = 0xff
+                else:
+                    red = hex(int(2*(1-scaled_val)*223+32))
+                    blue = 0xff
+
+                red = str(red)[2:]
+                blue = str(blue)[2:]
+                if(len(red) == 1):
+                    red = "0"+red
+                if(len(blue) == 1):
+                    blue = "0"+blue
+
+                hex_string = "#" + red + "22" + blue
                 vertices[vertex].set(color=hex_string)
                 i+=1
 
