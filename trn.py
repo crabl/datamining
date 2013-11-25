@@ -10,14 +10,11 @@ from networkx.readwrite import json_graph, write_gexf
 import random
 import heapq
 import sys
-import sklearn.preprocessing as skp
 from scipy.linalg import eigh as largest_eigh
 import scipy.spatial.distance as dist
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.io as scio
 import scipy.sparse as sparse
-import ubigraph
-import subprocess
 
 def random_vector(min_max_pairs):
     v = []
@@ -27,25 +24,29 @@ def random_vector(min_max_pairs):
     return np.array(v)
 
 def geodesic_distance(codebook, connections):
+    # Calculate geodesic edge lengths
     distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
     graph_edges = np.multiply(distances, connections)
+
+    # Run Dijkstra's algorithm on the resulting graph
     geo = sparse.csgraph.dijkstra(graph_edges,indices=range(0, len(codebook)))
     return geo
 
 def connect_graph(codebook, connections):
+    # Calculate geodesic distances of edges
     dijkstra_distances = geodesic_distance(codebook, connections)
     np.putmask(dijkstra_distances, dijkstra_distances==np.inf, 0) # replace all infinite edges with 0
 
     distances = dist.squareform(dist.pdist(codebook, 'euclidean'))
 
-    candidate_edges = distances - dijkstra_distances
+    candidate_edges = distances - dijkstra_distances # Take away all edges that are already in there
     np.putmask(candidate_edges, candidate_edges <= 0, np.nan)
 
     num_subgraphs = len(np.unique(candidate_edges.argmin(0)))
     print "    Remaining subgraphs: ",
 
     # While we have unconnected subgraphs
-    while num_subgraphs > 1:
+    while num_subgraphs > 2:
         print num_subgraphs, 
 
         # Find the smallest entry
@@ -156,7 +157,7 @@ def connections_to_graph(codebook_2d, connections):
 
     return G, positions
 
-def draw_graph_3d(G, positions, dataset, file_name, el, az):
+def draw_graph_3d(G, positions, file_name, el, az):
     plt.clf() # Clear the figure
     fig = plt.figure()
     plt.figure.max_num_figures = 20
@@ -169,7 +170,7 @@ def draw_graph_3d(G, positions, dataset, file_name, el, az):
         ax.plot(x,y,z, color='#000000', ls='-', alpha=0.25)
 
     ax.plot(*zip(*[positions[i] for i in positions.keys()]), marker='o', color='#BEF202', ls='')
-    ax.plot(*zip(*dataset), marker=',', color='b', ls='')
+    #ax.plot(*zip(*dataset), marker=',', color='b', ls='')
 
     ax.view_init(el, az)
     fig.savefig(file_name, filetype="jpg")
@@ -185,7 +186,7 @@ def output_json(G, file_name):
 def output_gexf(G):
     write_gexf(G, "graph.gexf")
 
-def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
+def main(fileName, codebookSize, scaleToDimension):
     raw_dataset = np.genfromtxt(str(fileName), delimiter="\t")
     #dataset = skp.normalize(raw_dataset) # only needed for TRNMAP
     dataset = raw_dataset
@@ -218,16 +219,23 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
     # Scale codebook down to two dimensions using MDS
     scaled_codebook = MDS(codebook, scaleToDimension)
     print "TRNMap Runtime:", time.time() - t0, "seconds"
-
-    print "Exporting to JSON..."
+    
     G, scaled_positions = connections_to_graph(scaled_codebook, connections)
-    #nx.draw(N, pos=scaled_positions, node_color="#BEF202", dim=2)
-    #plt.savefig("graph_2d.jpg", filetype="jpg")
-
+    if scaleToDimension == 2:
+        nx.draw(G, pos=scaled_positions, node_color="#BEF202", dim=2)
+        plt.savefig("graph_2d.jpg", filetype="jpg")
+    elif scaleToDimension == 3:
+        draw_graph_3d(G, scaled_positions, "graph_3d.jpg", 45, 125)
+    else:
+        print "Cannot scale to", scaleToDimension, "dimensions. Try 2 or 3."
+    """
+    print "Exporting to JSON..."
     # Output graph to JSON that Sigma/D3.js can read
     output_json(G, "graph.json")
 
     # Draw Ubigraph if user requests it
+    import ubigraph
+    import subprocess
     if drawUbigraph:
         try:
             print "<< STARTING UBIGRAPH SERVER >>"
@@ -286,10 +294,10 @@ def main(fileName, codebookSize, scaleToDimension, drawUbigraph):
                 hex_string = "#" + red + "22" + blue
                 vertices[vertex].set(color=hex_string)
                 i+=1
-
+    """
 
     print "Done!"
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]), bool(sys.argv[4]))
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]))
 
